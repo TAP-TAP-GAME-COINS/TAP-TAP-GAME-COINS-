@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tap & Earn — Simulated Ads</title>
+<style>
+  :root{--bg:#ffffff;--card:#fff;--accent:#1e90ff;--ok:#28a745;--muted:#666}
+  body{margin:0;font-family:Inter, system-ui, Arial, sans-serif;background:var(--bg);color:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+  .wrap{width:100%;max-width:720px}
+  .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,0.08)}
+  h1{margin:0 0 6px;font-size:20px}
+  p.lead{margin:0 0 14px;color:var(--muted)}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .btn{padding:12px 18px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
+  .btn-tap{background:linear-gradient(180deg,#ffd54a,#ffb300);color:#111}
+  .btn-ad{background:linear-gradient(180deg,#2196f3,#1769aa);color:#fff}
+  .btn-reset{background:#f1f1f1;color:#111;border:1px solid #ddd}
+  .stats{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:18px}
+  .stat{background:#fafafa;padding:10px 12px;border-radius:8px;min-width:120px;text-align:center}
+  .stat .val{font-weight:800;font-family:monospace;font-size:18px;margin-top:6px;display:block}
+  .yellow{color:#b8860b}
+  .blue{color:#1353c2}
+  .points{color:#0a9d58}
+  .notify{margin-top:12px;min-height:28px;display:flex;align-items:center;gap:8px}
+  .msg{padding:8px 12px;border-radius:8px;background:#f8f8f8;color:#222;display:inline-block}
+  .msg.ok{background:#e6ffef;border:1px solid #b7f2cd;color:#075f2a}
+  .msg.warn{background:#fff6e6;border:1px solid #ffd8a8;color:#6a4500}
+  .ad-overlay{position:fixed;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:999;visibility:hidden;opacity:0;transition:all .18s}
+  .ad-overlay.show{visibility:visible;opacity:1}
+  .ad-card{background:#fff;padding:22px;border-radius:10px;min-width:280px;text-align:center}
+  .ad-card p{margin:6px 0}
+  .small{font-size:13px;color:var(--muted)}
+  .footer{margin-top:16px;font-size:13px;color:#666;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  a.link{color:var(--accent);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Tap & Earn (Simulated Ads)</h1>
+      <p class="lead">Tap to collect points. 1000 points → 1 Yellow coin (🟡). 1000 Yellow → 1 Blue coin (🔵). Watch Ads to earn Yellow coins (only if ads available).</p>
+
+      <div class="controls">
+        <button id="tapBtn" class="btn btn-tap">TAP!</button>
+        <button id="watchAdBtn" class="btn btn-ad">WATCH AD</button>
+        <button id="resetBtn" class="btn btn-reset">RESET PROGRESS</button>
+      </div>
+
+      <div class="stats" aria-live="polite">
+        <div class="stat">
+          <div class="small">Points</div>
+          <div id="pointsVal" class="val points">0</div>
+        </div>
+        <div class="stat">
+          <div class="small">Yellow Coins 🟡</div>
+          <div id="yellowVal" class="val yellow">0</div>
+        </div>
+        <div class="stat">
+          <div class="small">Blue Coins 🔵</div>
+          <div id="blueVal" class="val blue">0</div>
+        </div>
+      </div>
+
+      <div class="notify">
+        <div id="message" class="msg" style="display:none"></div>
+      </div>
+
+      <div class="footer">
+        <div class="small">Saved locally in your browser</div>
+        <div class="small">Last saved: <span id="lastSaved">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- simulated ad overlay -->
+  <div id="adOverlay" class="ad-overlay" role="dialog" aria-hidden="true">
+    <div class="ad-card">
+      <h3>Advertisement</h3>
+      <p class="small" id="adText">Playing ad...</p>
+      <p id="adTimer" style="font-weight:800;font-size:18px;margin:8px 0">5</p>
+      <p class="small">This is a simulated ad. Replace with Monetag/Ads SDK later.</p>
+    </div>
+  </div>
+
+<script>
+/* -------------------------
+   STATE + STORAGE
+   ------------------------- */
+const LS_KEYS = { points:'tap_points_v1', yellow:'tap_yellow_v1', blue:'tap_blue_v1', last:'tap_last_v1' };
+
+let points = parseInt(localStorage.getItem(LS_KEYS.points)) || 0;
+let yellow = parseInt(localStorage.getItem(LS_KEYS.yellow)) || 0;
+let blue = parseInt(localStorage.getItem(LS_KEYS.blue)) || 0;
+
+const elPoints = document.getElementById('pointsVal');
+const elYellow = document.getElementById('yellowVal');
+const elBlue = document.getElementById('blueVal');
+const elMsg = document.getElementById('message');
+const elLastSaved = document.getElementById('lastSaved');
+
+function saveState(){
+  localStorage.setItem(LS_KEYS.points, points);
+  localStorage.setItem(LS_KEYS.yellow, yellow);
+  localStorage.setItem(LS_KEYS.blue, blue);
+  const now = new Date().toLocaleString();
+  localStorage.setItem(LS_KEYS.last, now);
+  elLastSaved.textContent = now;
+}
+function loadState(){
+  points = parseInt(localStorage.getItem(LS_KEYS.points)) || 0;
+  yellow = parseInt(localStorage.getItem(LS_KEYS.yellow)) || 0;
+  blue = parseInt(localStorage.getItem(LS_KEYS.blue)) || 0;
+  const last = localStorage.getItem(LS_KEYS.last) || '—';
+  elLastSaved.textContent = last;
+  render();
+}
+function render(){
+  elPoints.textContent = points;
+  elYellow.textContent = yellow;
+  elBlue.textContent = blue;
+}
+
+/* -------------------------
+   AUDIO (WebAudio simple coin tones)
+   ------------------------- */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx) audioCtx = new AudioCtx();
+}
+function playTone(freq, duration=0.14, type='sine', gain=0.12){
+  try{
+    ensureAudio();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.value = gain;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    g.gain.setValueAtTime(g.gain.value, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    o.stop(audioCtx.currentTime + duration + 0.02);
+  }catch(e){ /* audio blocked */ }
+}
+function playYellowSound(){ playTone(880,0.12,'sine',0.09); playTone(1320,0.08,'sine',0.06); }
+function playBlueSound(){ playTone(660,0.16,'triangle',0.12); playTone(880,0.14,'sine',0.08); }
+
+/* -------------------------
+   CORE LOGIC
+   ------------------------- */
+function awardYellow(count=1){
+  yellow += count;
+  // convert yellow->blue
+  if(yellow >= 1000){
+    const extraBlue = Math.floor(yellow / 1000);
+    blue += extraBlue;
+    yellow = yellow % 1000;
+    playBlueSound();
+    showMessage(`You converted Yellow → Blue (+${extraBlue} Blue)`, 'ok');
+  } else {
+    playYellowSound();
+    showMessage(`You earned ${count} Yellow coin${count>1?'s':''}`, 'ok');
+  }
+  saveState();
+  render();
+}
+
+function tapOnce(){
+  points += 1;
+  // convert points -> yellow
+  if(points >= 1000){
+    const extraY = Math.floor(points / 1000);
+    points = points % 1000;
+    awardYellow(extraY);
+  }
+  saveState();
+  render();
+}
+
+/* -------------------------
+   NOTIFY + UI HELPERS
+   ------------------------- */
+let notifyTimer = null;
+function showMessage(text, kind='info', ms=3000){
+  elMsg.style.display = 'inline-block';
+  elMsg.className = 'msg ' + (kind==='ok' ? 'ok' : kind==='warn' ? 'warn' : '');
+  elMsg.textContent = text;
+  if(notifyTimer) clearTimeout(notifyTimer);
+  notifyTimer = setTimeout(()=>{ elMsg.style.display='none'; }, ms);
+}
+
+/* -------------------------
+   SIMULATED AD FLOW
+   ------------------------- */
+const adOverlay = document.getElementById('adOverlay');
+const adTimerEl = document.getElementById('adTimer');
+const adText = document.getElementById('adText');
+
+let adCountdownInterval = null;
+let adCooldownUntil = 0; // timestamp to prevent immediate rewatch
+
+function isAdAvailable(){
+  // simulate availability: e.g. 65% chance available
+  return Math.random() < 0.65;
+}
+
+function watchAd(){
+  const now = Date.now();
+  if(now < adCooldownUntil){
+    const s = Math.ceil((adCooldownUntil - now)/1000);
+    showMessage(`Please wait ${s}s before trying another ad.`, 'warn', 2500);
+    return;
+  }
+
+  if(!isAdAvailable()){
+    showMessage('No ads available right now. Try again later.', 'warn', 3000);
+    return;
+  }
+
+  // Show overlay simulated ad (5 seconds)
+  let sec = 5;
+  adTimerEl.textContent = sec;
+  adText.textContent = 'Playing ad...';
+  adOverlay.classList.add('show');
+  adOverlay.setAttribute('aria-hidden','false');
+
+  adCountdownInterval = setInterval(()=>{
+    sec--;
+    adTimerEl.textContent = sec;
+    if(sec <= 0){
+      clearInterval(adCountdownInterval);
+      adOverlay.classList.remove('show');
+      adOverlay.setAttribute('aria-hidden','true');
+      // award 1 yellow coin on ad complete
+      awardYellow(1);
+      // set a short cooldown (e.g., 15s) to stop spamming
+      adCooldownUntil = Date.now() + (15 * 1000);
+    }
+  }, 1000);
+}
+
+/* -------------------------
+   UI HOOKUP
+   ------------------------- */
+document.getElementById('tapBtn').addEventListener('click', () => {
+  tapOnce();
+});
+document.getElementById('watchAdBtn').addEventListener('click', () => {
+  watchAd();
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if(!confirm('Clear saved progress?')) return;
+  points = 0; yellow = 0; blue = 0;
+  saveState(); render(); showMessage('Progress cleared', 'ok', 1800);
+});
+
+/* initialize */
+loadState();
+
+</script>
+</body>
+  </html>
