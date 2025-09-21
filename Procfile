@@ -1,1 +1,1 @@
-web: bin/boot
+web: vendor/bin/heroku-php-apache2 .
