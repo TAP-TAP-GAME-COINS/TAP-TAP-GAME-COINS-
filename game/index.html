@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tap Tap Game</title>
+</head>
+<body>
+  <h1>Tap Tap Game 🎮</h1>
+  <p id="coins">Coins: 0</p>
+  <button onclick="addCoins(10)">Add 10 Coins</button>
+  <button onclick="getCoins()">Get Coins</button>
+
+  <script>
+    const userId = 123; // maye gurbin da Telegram user_id
+
+    async function getCoins() {
+      const res = await fetch(`/get_coins?user_id=${userId}`);
+      const data = await res.json();
+      document.getElementById("coins").innerText = "Coins: " + data.coins;
+    }
+
+    async function addCoins(amount) {
+      await fetch("/add_coins", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({user_id: userId, amount: amount})
+      });
+      getCoins();
+    }
+
+    getCoins();
+  </script>
+</body>
+</html>
