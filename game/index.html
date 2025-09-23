@@ -1,33 +1,96 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Tap Tap Game</title>
+<meta charset="UTF-8">
+<title>Miciji Game</title>
+<style>
+  canvas { background: #eee; display: block; margin: 0 auto; }
+</style>
 </head>
 <body>
-  <h1>Tap Tap Game 🎮</h1>
-  <p id="coins">Coins: 0</p>
-  <button onclick="addCoins(10)">Add 10 Coins</button>
-  <button onclick="getCoins()">Get Coins</button>
+<canvas id="gameCanvas" width="600" height="400"></canvas>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-  <script>
-    const userId = 123; // maye gurbin da Telegram user_id
+let player = { x: 300, y: 200, size: 20, lives: 2, coins: 0 };
+let coins = [];
+let level = 1;
+let maxLevels = 4;
+let keys = {};
 
-    async function getCoins() {
-      const res = await fetch(`/get_coins?user_id=${userId}`);
-      const data = await res.json();
-      document.getElementById("coins").innerText = "Coins: " + data.coins;
+document.addEventListener('keydown', e => keys[e.key] = true);
+document.addEventListener('keyup', e => keys[e.key] = false);
+
+// Generate random coin
+function spawnCoin() {
+  coins.push({x: Math.random()*580, y: Math.random()*380, size: 10});
+}
+
+// Collision detection
+function collides(a, b) {
+  return a.x < b.x + b.size && a.x + a.size > b.x &&
+         a.y < b.y + b.size && a.y + a.size > b.y;
+}
+
+function update() {
+  // Move player
+  if(keys['ArrowUp']) player.y -= 5;
+  if(keys['ArrowDown']) player.y += 5;
+  if(keys['ArrowLeft']) player.x -= 5;
+  if(keys['ArrowRight']) player.x += 5;
+
+  // Keep inside canvas
+  if(player.x < 0) { player.x=0; loseLife(); }
+  if(player.x+player.size > canvas.width) { player.x = canvas.width-player.size; loseLife(); }
+  if(player.y < 0) { player.y=0; loseLife(); }
+  if(player.y+player.size > canvas.height) { player.y = canvas.height-player.size; loseLife(); }
+
+  // Check coin collection
+  coins.forEach((c, idx) => {
+    if(collides(player, c)){
+      player.coins++;
+      coins.splice(idx,1);
+      spawnCoin(); // spawn new coin
     }
+  });
+}
 
-    async function addCoins(amount) {
-      await fetch("/add_coins", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({user_id: userId, amount: amount})
-      });
-      getCoins();
-    }
+function loseLife() {
+  player.lives--;
+  if(player.lives <= 0){
+    alert("Game Over! Watch video for +1 life.");
+    player.lives = 1; // simulate reward video
+    player.coins = 0;
+    level = 1;
+    player.x = 300; player.y = 200;
+  }
+}
 
-    getCoins();
-  </script>
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Draw player
+  ctx.fillStyle = "green";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+  // Draw coins
+  ctx.fillStyle = "gold";
+  coins.forEach(c => ctx.fillRect(c.x, c.y, c.size, c.size));
+  // HUD
+  ctx.fillStyle = "black";
+  ctx.fillText("Lives: "+player.lives,10,20);
+  ctx.fillText("Coins: "+player.coins,10,40);
+  ctx.fillText("Level: "+level+"/"+maxLevels,10,60);
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// Start game
+spawnCoin();
+gameLoop();
+</script>
 </body>
 </html>
