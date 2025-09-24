@@ -2,152 +2,100 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Snake Coin Game</title>
+<title>Tap Tap Coin Game</title>
 <style>
-  body { text-align: center; font-family: Arial, sans-serif; }
-  canvas { background: #f0f0f0; display: block; margin: 20px auto; }
-  #hud { font-size: 18px; margin: 10px; }
-  button { margin: 10px; padding: 10px; font-size: 16px; display:none; }
+  body { text-align:center; font-family:Arial, sans-serif; background:#fafafa; }
+  h1 { color:#333; }
+  #tapBtn, #videoBtn {
+    padding:20px 40px; margin:15px; font-size:20px; border:none; border-radius:10px;
+    cursor:pointer; transition:0.2s; box-shadow:0 4px 6px rgba(0,0,0,0.2);
+  }
+  #tapBtn { background:#4caf50; color:white; }
+  #tapBtn:active { background:#45a049; transform:scale(0.95); }
+  #videoBtn { background:#ff9800; color:white; }
+  #hud { margin:20px; font-size:18px; }
 </style>
 </head>
 <body>
 
-<h1>Snake Coin Game</h1>
+<h1>Tap Tap Coin Game</h1>
+<button id="tapBtn">TAP!</button>
+<button id="videoBtn">Watch Video (+1 Yellow)</button>
+
 <div id="hud">
-  Lives: <span id="lives">3</span> | Coins: <span id="coins">0</span> | Level: <span id="level">1</span>
+  <p>Taps: <span id="taps">0</span></p>
+  <p>Yellow Coins: <span id="yellow">0</span></p>
+  <p>Blue Coins: <span id="blue">0</span></p>
+  <p>Green Coins: <span id="green">0</span></p>
 </div>
 
-<canvas id="gameCanvas" width="600" height="400"></canvas>
-<button id="rewardBtn">Watch Video (+1 Life)</button>
+<!-- Chin sound -->
+<audio id="coinSound">
+  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
+</audio>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+let taps = 0;
+let yellow = 0;
+let blue = 0;
+let green = 0;
 
-let player = { x: 300, y: 200, size: 20, lives: 3, coins: 0 };
-let coins = [];
-let level = 1;
-const maxLevels = 4;
-const keys = {};
+const tapsEl = document.getElementById("taps");
+const yellowEl = document.getElementById("yellow");
+const blueEl = document.getElementById("blue");
+const greenEl = document.getElementById("green");
+const sound = document.getElementById("coinSound");
 
-// Movement keys: WASD
-document.addEventListener('keydown', e => {
-  keys[e.key.toLowerCase()] = true;
-});
-document.addEventListener('keyup', e => {
-  keys[e.key.toLowerCase()] = false;
-});
-
-// Spawn coin
-function spawnCoin() {
-  coins.push({x: Math.random() * (canvas.width-10), y: Math.random()*(canvas.height-10), size: 10});
+function playSound(){
+  sound.currentTime = 0;
+  sound.play();
 }
 
-// Collision check
-function collides(a,b) {
-  return a.x < b.x + b.size && a.x + a.size > b.x &&
-         a.y < b.y + b.size && a.y + a.size > b.y;
+function updateHUD(){
+  tapsEl.textContent = taps;
+  yellowEl.textContent = yellow;
+  blueEl.textContent = blue;
+  greenEl.textContent = green;
 }
 
-// Lose life
-function loseLife() {
-  player.lives--;
-  updateHUD();
-  if(player.lives <= 0){
-    alert("Game Over! Click 'Watch Video' to get +1 life.");
-    document.getElementById('rewardBtn').style.display = 'inline-block';
-  } else {
-    resetPlayer();
-  }
-}
-
-// Reset player position
-function resetPlayer() {
-  player.x = canvas.width/2 - player.size/2;
-  player.y = canvas.height/2 - player.size/2;
-}
-
-// Update HUD
-function updateHUD() {
-  document.getElementById('lives').textContent = player.lives;
-  document.getElementById('coins').textContent = player.coins;
-  document.getElementById('level').textContent = level;
-}
-
-// Reward video
-document.getElementById('rewardBtn').addEventListener('click', () => {
-  player.lives = 1;
-  updateHUD();
-  document.getElementById('rewardBtn').style.display = 'none';
-  resetPlayer();
-});
-
-// Game update
-function update() {
-  // Movement
-  if(keys['w']) player.y -= 5;
-  if(keys['s']) player.y += 5;
-  if(keys['a']) player.x -= 5;
-  if(keys['d']) player.x += 5;
-
-  // Collision with walls
-  if(player.x < 0) { player.x=0; loseLife(); }
-  if(player.x+player.size>canvas.width) { player.x=canvas.width-player.size; loseLife(); }
-  if(player.y<0) { player.y=0; loseLife(); }
-  if(player.y+player.size>canvas.height) { player.y=canvas.height-player.size; loseLife(); }
-
-  // Coin collection
-  coins.forEach((c,idx)=>{
-    if(collides(player,c)){
-      player.coins++;
-      coins.splice(idx,1);
-      spawnCoin();
-      // Level up every 5 coins
-      if(player.coins % 5 === 0){
-        level++;
-        if(level>maxLevels){
-          alert("Game Over! You reached max level.");
-          resetGame();
-        }
-        updateHUD();
+document.getElementById("tapBtn").addEventListener("click", () => {
+  taps++;
+  if(taps >= 1000){
+    taps = 0;
+    yellow++;
+    playSound();
+    if(yellow >= 1000){
+      yellow = 0;
+      blue++;
+      playSound();
+      if(blue >= 1000){
+        blue = 0;
+        green++;
+        playSound();
       }
     }
-  });
-}
-
-// Reset game
-function resetGame() {
-  player.lives=3;
-  player.coins=0;
-  level=1;
-  coins=[];
-  for(let i=0;i<5;i++) spawnCoin();
+  }
   updateHUD();
-  resetPlayer();
-}
+});
 
-// Draw
-function draw() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  // Player
-  ctx.fillStyle = "green";
-  ctx.fillRect(player.x, player.y, player.size, player.size);
-  // Coins
-  ctx.fillStyle = "gold";
-  coins.forEach(c=>ctx.fillRect(c.x,c.y,c.size,c.size));
-}
-
-// Game loop
-function gameLoop() {
-  update();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
+document.getElementById("videoBtn").addEventListener("click", () => {
+  yellow++;
+  playSound();
+  if(yellow >= 1000){
+    yellow = 0;
+    blue++;
+    playSound();
+    if(blue >= 1000){
+      blue = 0;
+      green++;
+      playSound();
+    }
+  }
+  updateHUD();
+});
 
 // Init
-for(let i=0;i<5;i++) spawnCoin();
 updateHUD();
-gameLoop();
 </script>
 
 </body>
