@@ -40,6 +40,23 @@ let yellow = 0;
 let blue = 0;
 let green = 0;
 
+// 🔹 Load data if exists
+function loadGame() {
+  const saved = JSON.parse(localStorage.getItem("tapGame"));
+  if(saved){
+    taps = saved.taps;
+    yellow = saved.yellow;
+    blue = saved.blue;
+    green = saved.green;
+  }
+}
+
+// 🔹 Save data
+function saveGame() {
+  const data = { taps, yellow, blue, green };
+  localStorage.setItem("tapGame", JSON.stringify(data));
+}
+
 const tapsEl = document.getElementById("taps");
 const yellowEl = document.getElementById("yellow");
 const blueEl = document.getElementById("blue");
@@ -56,6 +73,7 @@ function updateHUD(){
   yellowEl.textContent = yellow;
   blueEl.textContent = blue;
   greenEl.textContent = green;
+  saveGame(); // 🔹 auto save after update
 }
 
 document.getElementById("tapBtn").addEventListener("click", () => {
@@ -94,7 +112,8 @@ document.getElementById("videoBtn").addEventListener("click", () => {
   updateHUD();
 });
 
-// Init
+// 🔹 Init
+loadGame();
 updateHUD();
 </script>
 
