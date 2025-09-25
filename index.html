@@ -1,121 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Tap Tap Coin Game</title>
-<style>
-  body { text-align:center; font-family:Arial, sans-serif; background:#fafafa; }
-  h1 { color:#333; }
-  #tapBtn, #videoBtn {
-    padding:20px 40px; margin:15px; font-size:20px; border:none; border-radius:10px;
-    cursor:pointer; transition:0.2s; box-shadow:0 4px 6px rgba(0,0,0,0.2);
-  }
-  #tapBtn { background:#4caf50; color:white; }
-  #tapBtn:active { background:#45a049; transform:scale(0.95); }
-  #videoBtn { background:#ff9800; color:white; }
-  #hud { margin:20px; font-size:18px; }
-</style>
+  <meta charset="UTF-8">
+  <title>Tap Tap Game</title>
+  <style>
+    body { 
+      text-align:center; 
+      font-family:Arial, sans-serif; 
+      background:#f9f9f9; 
+      padding:20px; 
+    }
+    #tapBtn {
+      width:200px; height:200px;
+      border-radius:50%;
+      background:gold;
+      font-size:22px;
+      font-weight:bold;
+      cursor:pointer;
+      border:none;
+      box-shadow:0 4px 6px rgba(0,0,0,0.2);
+    }
+    #tapBtn:active { background:orange; }
+    .stats { margin-top:20px; font-size:18px; }
+    .withdraw, .videoBtn {
+      margin-top:20px;
+      padding:10px 20px;
+      font-size:16px;
+      cursor:pointer;
+    }
+    .withdraw { background:#007bff; color:#fff; border:none; border-radius:5px; }
+    .videoBtn { background:green; color:#fff; border:none; border-radius:5px; }
+  </style>
 </head>
 <body>
 
-<h1>Tap Tap Coin Game</h1>
-<button id="tapBtn">TAP!</button>
-<button id="videoBtn">Watch Video (+1 Yellow)</button>
+  <h1>Tap Tap Game</h1>
+  <button id="tapBtn">TAP!</button>
 
-<div id="hud">
-  <p>Taps: <span id="taps">0</span></p>
-  <p>Yellow Coins: <span id="yellow">0</span></p>
-  <p>Blue Coins: <span id="blue">0</span></p>
-  <p>Green Coins: <span id="green">0</span></p>
-</div>
+  <div class="stats">
+    <p>Blue Coins: <span id="blue">0</span></p>
+    <p>Yellow Coins: <span id="yellow">0</span></p>
+    <p>USD: $<span id="usd">0.00</span></p>
+  </div>
 
-<!-- Chin sound -->
-<audio id="coinSound">
-  <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
-</audio>
+  <button class="videoBtn" id="watchAd">🎥 Watch Video for 1 Blue Coin</button>
+  <br>
+  <button class="withdraw" id="withdrawBtn">Withdraw</button>
 
-<script>
-let taps = 0;
-let yellow = 0;
-let blue = 0;
-let green = 0;
+  <script>
+    let taps = 0;
+    let blue = 0;
+    let yellow = 0;
+    let usd = 0;
 
-// 🔹 Load data if exists
-function loadGame() {
-  const saved = JSON.parse(localStorage.getItem("tapGame"));
-  if(saved){
-    taps = saved.taps;
-    yellow = saved.yellow;
-    blue = saved.blue;
-    green = saved.green;
-  }
-}
+    function updateUI() {
+      document.getElementById("blue").textContent = blue;
+      document.getElementById("yellow").textContent = yellow;
+      document.getElementById("usd").textContent = usd.toFixed(2);
+    }
 
-// 🔹 Save data
-function saveGame() {
-  const data = { taps, yellow, blue, green };
-  localStorage.setItem("tapGame", JSON.stringify(data));
-}
-
-const tapsEl = document.getElementById("taps");
-const yellowEl = document.getElementById("yellow");
-const blueEl = document.getElementById("blue");
-const greenEl = document.getElementById("green");
-const sound = document.getElementById("coinSound");
-
-function playSound(){
-  sound.currentTime = 0;
-  sound.play();
-}
-
-function updateHUD(){
-  tapsEl.textContent = taps;
-  yellowEl.textContent = yellow;
-  blueEl.textContent = blue;
-  greenEl.textContent = green;
-  saveGame(); // 🔹 auto save after update
-}
-
-document.getElementById("tapBtn").addEventListener("click", () => {
-  taps++;
-  if(taps >= 1000){
-    taps = 0;
-    yellow++;
-    playSound();
-    if(yellow >= 1000){
-      yellow = 0;
-      blue++;
-      playSound();
-      if(blue >= 1000){
-        blue = 0;
-        green++;
-        playSound();
+    // tapping
+    document.getElementById("tapBtn").addEventListener("click", () => {
+      taps++;
+      if (taps % 200 === 0) {
+        blue++;
       }
-    }
-  }
-  updateHUD();
-});
+      if (blue >= 200) {
+        blue -= 200;
+        yellow++;
+      }
+      if (yellow >= 200) {
+        yellow -= 200;
+        usd += 0.1;
+      }
+      updateUI();
+    });
 
-document.getElementById("videoBtn").addEventListener("click", () => {
-  yellow++;
-  playSound();
-  if(yellow >= 1000){
-    yellow = 0;
-    blue++;
-    playSound();
-    if(blue >= 1000){
-      blue = 0;
-      green++;
-      playSound();
-    }
-  }
-  updateHUD();
-});
+    // watch video button
+    document.getElementById("watchAd").addEventListener("click", () => {
+      alert("Simulating: Please watch video ad... (demo only)");
+      blue++;
+      updateUI();
+    });
 
-// 🔹 Init
-loadGame();
-updateHUD();
-</script>
+    // withdraw
+    document.getElementById("withdrawBtn").addEventListener("click", () => {
+      if (usd < 5) {
+        alert("Minimum withdraw is $5. Keep playing!");
+      } else {
+        let ltc = prompt("Enter your Litecoin address:");
+        if (ltc) {
+          alert("Withdraw request sent! Admin will review and pay you manually.");
+          // Here withdraw data can be sent to database for admin panel
+        }
+      }
+    });
 
+    updateUI();
+  </script>
 </body>
 </html>
