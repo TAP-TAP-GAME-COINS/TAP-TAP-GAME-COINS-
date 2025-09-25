@@ -4,99 +4,106 @@
   <meta charset="UTF-8">
   <title>Tap Tap Game</title>
   <style>
-    body { 
-      text-align:center; 
-      font-family:Arial, sans-serif; 
-      background:#f9f9f9; 
-      padding:20px; 
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5f5;
+      padding: 20px;
     }
-    #tapBtn {
-      width:200px; height:200px;
-      border-radius:50%;
-      background:gold;
-      font-size:22px;
-      font-weight:bold;
-      cursor:pointer;
-      border:none;
-      box-shadow:0 4px 6px rgba(0,0,0,0.2);
+    h2 { color: #333; }
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    #tapBtn:active { background:orange; }
-    .stats { margin-top:20px; font-size:18px; }
-    .withdraw, .videoBtn {
-      margin-top:20px;
-      padding:10px 20px;
-      font-size:16px;
-      cursor:pointer;
+    #tapBtn { background: #4caf50; color: white; }
+    #videoBtn { background: #2196f3; color: white; }
+    #withdrawBtn { background: #ff9800; color: white; }
+    .stats {
+      margin: 20px;
+      font-size: 18px;
     }
-    .withdraw { background:#007bff; color:#fff; border:none; border-radius:5px; }
-    .videoBtn { background:green; color:#fff; border:none; border-radius:5px; }
   </style>
 </head>
 <body>
-
-  <h1>Tap Tap Game</h1>
+  <h2>Tap Tap Game</h2>
   <button id="tapBtn">TAP!</button>
 
   <div class="stats">
-    <p>Blue Coins: <span id="blue">0</span></p>
-    <p>Yellow Coins: <span id="yellow">0</span></p>
+    <p>Blue Coins: <span id="blueCoins">0</span></p>
+    <p>Yellow Coins: <span id="yellowCoins">0</span></p>
     <p>USD: $<span id="usd">0.00</span></p>
   </div>
 
-  <button class="videoBtn" id="watchAd">🎥 Watch Video for 1 Blue Coin</button>
-  <br>
-  <button class="withdraw" id="withdrawBtn">Withdraw</button>
+  <button id="videoBtn">🎥 Watch Video for 1 Blue Coin</button><br>
+  <button id="withdrawBtn">Withdraw</button>
 
   <script>
     let taps = 0;
-    let blue = 0;
-    let yellow = 0;
+    let blueCoins = 0;
+    let yellowCoins = 0;
     let usd = 0;
 
-    function updateUI() {
-      document.getElementById("blue").textContent = blue;
-      document.getElementById("yellow").textContent = yellow;
-      document.getElementById("usd").textContent = usd.toFixed(2);
+    const tapBtn = document.getElementById("tapBtn");
+    const videoBtn = document.getElementById("videoBtn");
+    const withdrawBtn = document.getElementById("withdrawBtn");
+
+    const blueDisplay = document.getElementById("blueCoins");
+    const yellowDisplay = document.getElementById("yellowCoins");
+    const usdDisplay = document.getElementById("usd");
+
+    function updateDisplay() {
+      blueDisplay.textContent = blueCoins;
+      yellowDisplay.textContent = yellowCoins;
+      usdDisplay.textContent = usd.toFixed(2);
     }
 
-    // tapping
-    document.getElementById("tapBtn").addEventListener("click", () => {
+    tapBtn.addEventListener("click", () => {
       taps++;
-      if (taps % 200 === 0) {
-        blue++;
+      if (taps >= 200) {
+        taps = 0;
+        blueCoins++;
       }
-      if (blue >= 200) {
-        blue -= 200;
-        yellow++;
+      if (blueCoins >= 200) {
+        blueCoins = 0;
+        yellowCoins++;
       }
-      if (yellow >= 200) {
-        yellow -= 200;
-        usd += 0.1;
+      if (yellowCoins >= 1) {
+        usd = yellowCoins * 0.1;
       }
-      updateUI();
+      updateDisplay();
     });
 
-    // watch video button
-    document.getElementById("watchAd").addEventListener("click", () => {
-      alert("Simulating: Please watch video ad... (demo only)");
-      blue++;
-      updateUI();
+    videoBtn.addEventListener("click", () => {
+      // A nan zaka haɗa da ads SDK daga baya
+      blueCoins++;
+      if (blueCoins >= 200) {
+        blueCoins = 0;
+        yellowCoins++;
+      }
+      if (yellowCoins >= 1) {
+        usd = yellowCoins * 0.1;
+      }
+      updateDisplay();
+      alert("🎥 Video watched! You earned 1 Blue Coin.");
     });
 
-    // withdraw
-    document.getElementById("withdrawBtn").addEventListener("click", () => {
+    withdrawBtn.addEventListener("click", () => {
       if (usd < 5) {
-        alert("Minimum withdraw is $5. Keep playing!");
+        alert("❌ Minimum withdraw is $5. Keep playing!");
       } else {
-        let ltc = prompt("Enter your Litecoin address:");
-        if (ltc) {
-          alert("Withdraw request sent! Admin will review and pay you manually.");
-          // Here withdraw data can be sent to database for admin panel
+        let address = prompt("Enter your Litecoin (LTC) wallet address:");
+        if (address) {
+          alert("✅ Withdraw request sent!\nAmount: $" + usd.toFixed(2) + "\nAddress: " + address);
+          // A nan zaka aika request ɗin zuwa admin panel/backend naka
         }
       }
     });
 
-    updateUI();
+    updateDisplay();
   </script>
 </body>
 </html>
