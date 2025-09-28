@@ -2,108 +2,178 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Tap Tap Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TGC GAME</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f5f5f5;
-      padding: 20px;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
     }
-    h2 { color: #333; }
-    button {
-      padding: 12px 20px;
+    h1 {
+      margin: 20px;
+      color: #333;
+    }
+    .game-container {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      padding: 20px;
       margin: 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    #tapButton {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: gold;
+      border: none;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .stats p {
+      margin: 6px 0;
       font-size: 16px;
+    }
+    button {
+      margin: 8px;
+      padding: 10px 20px;
       border: none;
       border-radius: 8px;
       cursor: pointer;
+      font-size: 15px;
     }
-    #tapBtn { background: #4caf50; color: white; }
-    #videoBtn { background: #2196f3; color: white; }
-    #withdrawBtn { background: #ff9800; color: white; }
-    .stats {
-      margin: 20px;
-      font-size: 18px;
+    #watchAd {
+      background: #007bff;
+      color: white;
+    }
+    #withdraw {
+      background: orange;
+      color: white;
+    }
+    .contact {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      padding: 20px;
+      margin: 20px 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .contact input, .contact textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .contact button {
+      background: green;
+      color: white;
     }
   </style>
 </head>
 <body>
-  <h2>Tap Tap Game</h2>
-  <button id="tapBtn">TAP!</button>
+  <h1>🔥 TGC GAME 🔥</h1>
 
-  <div class="stats">
-    <p>Blue Coins: <span id="blueCoins">0</span></p>
-    <p>Yellow Coins: <span id="yellowCoins">0</span></p>
-    <p>USD: $<span id="usd">0.00</span></p>
+  <div class="game-container">
+    <button id="tapButton">TAP</button>
+    <div class="stats">
+      <p>Taps: <span id="taps">0</span> / 500</p>
+      <p>Blue: <span id="blue">0</span></p>
+      <p>Yellow: <span id="yellow">0</span></p>
+      <p>USD: $<span id="usd">0.00</span></p>
+    </div>
+    <button id="watchAd">🎥 Watch Video to earn 1 Blue</button>
+    <button id="withdraw">Withdraw</button>
+    <p style="font-size:13px;color:#555;margin-top:10px;">
+      Conversion: 500 Taps → 1 Blue • 200 Blue → 1 Yellow • 1 Yellow = $0.10 • Minimum withdraw: $5 (Litecoin)<br>
+      Video rewards are given only when a video ad is loaded and watched fully (simulated here).
+    </p>
   </div>
 
-  <button id="videoBtn">🎥 Watch Video for 1 Blue Coin</button><br>
-  <button id="withdrawBtn">Withdraw</button>
+  <div class="contact">
+    <h3>Contact Us</h3>
+    <input type="text" id="name" placeholder="Your name (optional)">
+    <input type="email" id="email" placeholder="Email (optional)">
+    <textarea id="message" rows="4" placeholder="Write your message here..."></textarea>
+    <button onclick="sendMessage()">Send Message</button>
+  </div>
 
   <script>
-    let taps = 0;
-    let blueCoins = 0;
-    let yellowCoins = 0;
-    let usd = 0;
+    let taps = 0, blue = 0, yellow = 0, usd = 0;
 
-    const tapBtn = document.getElementById("tapBtn");
-    const videoBtn = document.getElementById("videoBtn");
-    const withdrawBtn = document.getElementById("withdrawBtn");
-
-    const blueDisplay = document.getElementById("blueCoins");
-    const yellowDisplay = document.getElementById("yellowCoins");
+    const tapBtn = document.getElementById("tapButton");
+    const tapsDisplay = document.getElementById("taps");
+    const blueDisplay = document.getElementById("blue");
+    const yellowDisplay = document.getElementById("yellow");
     const usdDisplay = document.getElementById("usd");
-
-    function updateDisplay() {
-      blueDisplay.textContent = blueCoins;
-      yellowDisplay.textContent = yellowCoins;
-      usdDisplay.textContent = usd.toFixed(2);
-    }
 
     tapBtn.addEventListener("click", () => {
       taps++;
-      if (taps >= 200) {
+      if (taps >= 500) {
+        blue++;
         taps = 0;
-        blueCoins++;
-      }
-      if (blueCoins >= 200) {
-        blueCoins = 0;
-        yellowCoins++;
-      }
-      if (yellowCoins >= 1) {
-        usd = yellowCoins * 0.1;
       }
       updateDisplay();
     });
 
-    videoBtn.addEventListener("click", () => {
-      // A nan zaka haɗa da ads SDK daga baya
-      blueCoins++;
-      if (blueCoins >= 200) {
-        blueCoins = 0;
-        yellowCoins++;
-      }
-      if (yellowCoins >= 1) {
-        usd = yellowCoins * 0.1;
-      }
+    document.getElementById("watchAd").addEventListener("click", () => {
+      alert("🎥 Ad watched! You earned 1 Blue.");
+      blue++;
       updateDisplay();
-      alert("🎥 Video watched! You earned 1 Blue Coin.");
     });
 
-    withdrawBtn.addEventListener("click", () => {
-      if (usd < 5) {
-        alert("❌ Minimum withdraw is $5. Keep playing!");
+    document.getElementById("withdraw").addEventListener("click", () => {
+      if (usd >= 5) {
+        alert("✅ Withdrawal request sent!");
       } else {
-        let address = prompt("Enter your Litecoin (LTC) wallet address:");
-        if (address) {
-          alert("✅ Withdraw request sent!\nAmount: $" + usd.toFixed(2) + "\nAddress: " + address);
-          // A nan zaka aika request ɗin zuwa admin panel/backend naka
-        }
+        alert("❌ Minimum withdrawal is $5.");
       }
     });
 
-    updateDisplay();
+    function updateDisplay() {
+      // convert Blue to Yellow
+      while (blue >= 200) {
+        yellow++;
+        blue -= 200;
+      }
+      // convert Yellow to USD
+      usd = yellow * 0.10;
+
+      tapsDisplay.textContent = taps;
+      blueDisplay.textContent = blue;
+      yellowDisplay.textContent = yellow;
+      usdDisplay.textContent = usd.toFixed(2);
+    }
+
+    function sendMessage() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const message = document.getElementById("message").value;
+
+      if (message.trim() === "") {
+        alert("Please enter a message.");
+        return;
+      }
+
+      let stored = JSON.parse(localStorage.getItem("messages")) || [];
+      stored.push({ name, email, message });
+      localStorage.setItem("messages", JSON.stringify(stored));
+
+      alert("📨 Message saved locally (and can be sent by email).");
+      document.getElementById("message").value = "";
+    }
   </script>
 </body>
 </html>
