@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -81,17 +81,10 @@
       background: green;
       color: white;
     }
-    #loginBtn {
-      background: #28a745;
-      color: white;
-      margin-bottom: 10px;
-    }
   </style>
 </head>
 <body>
   <h1> 🪙TGC GAME🪙 </h1>
-
-  <button id="loginBtn">🔑 Login with Google</button>
 
   <div class="game-container">
     <button id="tapButton">TAP</button>
@@ -117,74 +110,8 @@
     <button onclick="sendMessage()">Send Message</button>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
-
-    // Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyDZcyVRTq14vpQod-dMQQceo10gl7qvRbA",
-      authDomain: "tgc-game-f0f44.firebaseapp.com",
-      projectId: "tgc-game-f0f44",
-      storageBucket: "tgc-game-f0f44.firebasestorage.app",
-      messagingSenderId: "429764249913",
-      appId: "1:429764249913:web:1dd40b745d055b952a80e8",
-      measurementId: "G-GV2GSJB2BF"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
-
-    let currentUser = null;
+  <script>
     let taps = 0, blue = 0, yellow = 0, usd = 0;
-
-    // Restore from localStorage if exists
-    if (localStorage.getItem("gameData")) {
-      const saved = JSON.parse(localStorage.getItem("gameData"));
-      taps = saved.taps || 0;
-      blue = saved.blue || 0;
-      yellow = saved.yellow || 0;
-      updateDisplay();
-    }
-
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        currentUser = result.user;
-        await loadUserData();
-        alert("✅ Logged in as " + currentUser.displayName);
-      } catch(e) {
-        console.error(e);
-        alert("❌ Login failed");
-      }
-    });
-
-    async function loadUserData() {
-      if (!currentUser) return;
-      const userRef = doc(db, "users", currentUser.uid);
-      const docSnap = await getDoc(userRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        taps = data.taps || 0;
-        blue = data.blue || 0;
-        yellow = data.yellow || 0;
-      } else {
-        await setDoc(userRef, { taps: 0, blue: 0, yellow: 0 });
-      }
-      updateDisplay();
-    }
-
-    async function saveUserData() {
-      if (currentUser) {
-        const userRef = doc(db, "users", currentUser.uid);
-        await setDoc(userRef, { taps, blue, yellow });
-      }
-      localStorage.setItem("gameData", JSON.stringify({ taps, blue, yellow }));
-    }
 
     const tapBtn = document.getElementById("tapButton");
     const tapsDisplay = document.getElementById("taps");
@@ -228,8 +155,6 @@
       blueDisplay.textContent = blue;
       yellowDisplay.textContent = yellow;
       usdDisplay.textContent = usd.toFixed(2);
-
-      saveUserData();
     }
 
     function sendMessage() {
@@ -249,14 +174,6 @@
       alert("📨 Message saved locally (and can be sent by email).");
       document.getElementById("message").value = "";
     }
-
-    // Auto login check
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        await loadUserData();
-      }
-    });
   </script>
 </body>
 </html>
