@@ -1,92 +1,30 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TGC GAME</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f9;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-    }
-    h1 {
-      margin: 20px;
-      color: #333;
-    }
-    .game-container {
-      width: 100%;
-      max-width: 400px;
-      background: white;
-      padding: 20px;
-      margin: 10px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      text-align: center;
-    }
-    #tapButton {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      background: gold;
-      border: none;
-      font-size: 20px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 20px;
-    }
-    .stats p {
-      margin: 6px 0;
-      font-size: 16px;
-    }
-    button {
-      margin: 8px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 15px;
-    }
-    #watchAd {
-      background: #007bff;
-      color: white;
-    }
-    #withdraw {
-      background: orange;
-      color: white;
-    }
-    .contact {
-      width: 100%;
-      max-width: 400px;
-      background: white;
-      padding: 20px;
-      margin: 20px 10px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    .contact input, .contact textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    .contact button {
-      background: green;
-      color: white;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; }
+    h1 { margin: 20px; color: #333; }
+    .game-container { width: 100%; max-width: 400px; background: white; padding: 20px; margin: 10px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); text-align: center; }
+    #tapButton { width: 150px; height: 150px; border-radius: 50%; background: gold; border: none; font-size: 20px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
+    .stats p { margin: 6px 0; font-size: 16px; }
+    button { margin: 8px; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 15px; }
+    #watchAd { background: #007bff; color: white; }
+    #withdraw { background: orange; color: white; }
+    .contact { width: 100%; max-width: 400px; background: white; padding: 20px; margin: 20px 10px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+    .contact input, .contact textarea { width: 100%; padding: 10px; margin: 6px 0; border-radius: 6px; border: 1px solid #ccc; }
+    .contact button { background: green; color: white; }
   </style>
 </head>
 <body>
   <h1> 🪙TGC GAME🪙 </h1>
 
-  <div class="game-container">
+  <button id="loginBtn">🔑 Login with Google</button>
+  <button id="logoutBtn" style="display:none;">🚪 Logout</button>
+
+  <div class="game-container" style="display:none;" id="gameBox">
     <button id="tapButton">TAP</button>
     <div class="stats">
       <p>Taps: <span id="taps">0</span> / 500</p>
@@ -96,22 +34,32 @@
     </div>
     <button id="watchAd">🎥 Watch Video to earn 1 Blue</button>
     <button id="withdraw">Withdraw</button>
-    <p style="font-size:13px;color:#555;margin-top:10px;">
-      Conversion: 500 Taps → 1 Blue • 200 Blue → 1 Yellow • 1 Yellow = $0.10 • Minimum withdraw: $5 (Litecoin)<br>
-      Video rewards are given only when a video ad is loaded and watched fully (simulated here).
-    </p>
   </div>
 
-  <div class="contact">
-    <h3>Contact Us</h3>
-    <input type="text" id="name" placeholder="Your name (optional)">
-    <input type="email" id="email" placeholder="Email (optional)">
-    <textarea id="message" rows="4" placeholder="Write your message here..."></textarea>
-    <button onclick="sendMessage()">Send Message</button>
-  </div>
+  <script type="module">
+    // ===== Firebase Imports =====
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  <script>
+    // ===== Your Firebase Config =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyDZcyVRTq14vpQod-dMQQceo10gl7qvRbA",
+      authDomain: "tgc-game-f0f44.firebaseapp.com",
+      projectId: "tgc-game-f0f44",
+      storageBucket: "tgc-game-f0f44.firebasestorage.app",
+      messagingSenderId: "429764249913",
+      appId: "1:429764249913:web:1dd40b745d055b952a80e8",
+      measurementId: "G-GV2GSJB2BF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    const db = getFirestore(app);
+
     let taps = 0, blue = 0, yellow = 0, usd = 0;
+    let currentUser = null;
 
     const tapBtn = document.getElementById("tapButton");
     const tapsDisplay = document.getElementById("taps");
@@ -119,6 +67,50 @@
     const yellowDisplay = document.getElementById("yellow");
     const usdDisplay = document.getElementById("usd");
 
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const gameBox = document.getElementById("gameBox");
+
+    // ====== Save to Firestore ======
+    async function saveData() {
+      if (!currentUser) return;
+      await setDoc(doc(db, "users", currentUser.uid), {
+        taps, blue, yellow, usd
+      });
+    }
+
+    // ====== Load from Firestore ======
+    async function loadData() {
+      if (!currentUser) return;
+      const docRef = doc(db, "users", currentUser.uid);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        let data = snap.data();
+        taps = data.taps || 0;
+        blue = data.blue || 0;
+        yellow = data.yellow || 0;
+        usd = data.usd || 0;
+      } else {
+        await saveData(); // create new doc
+      }
+      updateDisplay();
+    }
+
+    // ====== Update Display ======
+    function updateDisplay() {
+      while (blue >= 200) {
+        yellow++;
+        blue -= 200;
+      }
+      usd = yellow * 0.10;
+      tapsDisplay.textContent = taps;
+      blueDisplay.textContent = blue;
+      yellowDisplay.textContent = yellow;
+      usdDisplay.textContent = usd.toFixed(2);
+      saveData();
+    }
+
+    // ===== Buttons =====
     tapBtn.addEventListener("click", () => {
       taps++;
       if (taps >= 500) {
@@ -142,38 +134,30 @@
       }
     });
 
-    function updateDisplay() {
-      // convert Blue to Yellow
-      while (blue >= 200) {
-        yellow++;
-        blue -= 200;
+    // ===== Auth =====
+    loginBtn.onclick = async () => {
+      await signInWithPopup(auth, provider);
+    };
+
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        gameBox.style.display = "block";
+        await loadData();
+      } else {
+        currentUser = null;
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        gameBox.style.display = "none";
       }
-      // convert Yellow to USD
-      usd = yellow * 0.10;
-
-      tapsDisplay.textContent = taps;
-      blueDisplay.textContent = blue;
-      yellowDisplay.textContent = yellow;
-      usdDisplay.textContent = usd.toFixed(2);
-    }
-
-    function sendMessage() {
-      const name = document.getElementById("name").value;
-      const email = document.getElementById("email").value;
-      const message = document.getElementById("message").value;
-
-      if (message.trim() === "") {
-        alert("Please enter a message.");
-        return;
-      }
-
-      let stored = JSON.parse(localStorage.getItem("messages")) || [];
-      stored.push({ name, email, message });
-      localStorage.setItem("messages", JSON.stringify(stored));
-
-      alert("📨 Message saved locally (and can be sent by email).");
-      document.getElementById("message").value = "";
-    }
+    });
   </script>
 </body>
 </html>
+
