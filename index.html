@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TGC — Full Game (No Fake Ads)</title>
+  <title>TGC — Tap To Earn</title>
   <style>
     :root{
       --gold:#FFD700;
@@ -12,24 +11,41 @@
       --bg:#ffffff;
       --muted:#555;
     }
+    * { box-sizing: border-box; }
     body {
       margin:0;
-      font-family: Inter, Arial, Helvetica, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
       background: var(--bg);
       color: #111;
       display:flex;
       flex-direction:column;
       align-items:center;
       padding:20px;
+      min-height:100vh;
     }
-    header { text-align:center; margin-bottom:8px; }
-    h1 {
-      font-size:44px;
-      margin:0;
+
+    /* Header: TGC (big) above "Tap To Earn" */
+    header {
+      text-align:center;
+      margin-bottom:12px;
+    }
+    .title-big {
+      font-size:56px;
+      font-weight:900;
       color:#000;
+      margin:0;
+      line-height:0.9;
       text-shadow: 1px 1px var(--gold);
-      letter-spacing:2px;
+      letter-spacing:4px;
     }
+    .subtitle {
+      margin:6px 0 0;
+      font-size:20px;
+      font-weight:700;
+      color:#222;
+      text-transform: none;
+    }
+
     #gameCard{
       width:100%;
       max-width:760px;
@@ -79,7 +95,7 @@
     .btn-orange { background:#ff7a00; color:#fff; }
     .btn-green  { background:#2ea44f; color:#fff; }
     .btn-blue   { background:#0366d6; color:#fff; }
-    .note { text-align:center; color:var(--muted); margin-top:10px; font-size:13px; }
+    .note { text-align:center; color:var(--muted); margin-top:12px; font-size:14px; line-height:1.4; }
 
     #history {
       margin-top:18px;
@@ -90,6 +106,7 @@
     .hist-item { padding:10px; border-bottom:1px solid #f0f0f0; }
 
     @media (max-width:480px){
+      .title-big { font-size:40px; }
       #tapCircle { width:140px; height:140px; font-size:22px; }
       .stat { min-width:120px; }
     }
@@ -98,8 +115,8 @@
 <body>
 
   <header>
-    <h1>TGC</h1>
-    <div style="color:var(--muted); margin-top:6px">Tap to earn — original rules. Watch Ads requires a real ad and will reward only on real ad callback.</div>
+    <div class="title-big">TGC</div>
+    <div class="subtitle">Tap To Earn</div>
   </header>
 
   <main id="gameCard" role="main">
@@ -118,32 +135,19 @@
       <button id="contactBtn" class="btn-blue">Contact Us</button>
     </div>
 
-    <div class="note">
-      Rules: <strong>200 taps = 1 Yellow coin</strong> • <strong>200 Yellow = 1 TGC</strong> • <strong>1 TGC = $0.10</strong><br>
-      Watch Ads will give <strong>+1 Yellow coin</strong> only when a real ad network confirms reward (no fake ads).
+    <div class="note" id="rulesText">
+      200 taps = 1 Yellow coin • 200 Yellow = 1 TGC • 1 TGC = $0.10<br>
+      Watch Video Ads To Get 1 Yellow
     </div>
 
     <div id="history"></div>
   </main>
 
 <script>
-/*
-  Final game (no fake ads)
-  - Original rules:
-      200 TAPs => 1 Yellow Coin
-      200 Yellow => 1 TGC
-      1 TGC = $0.10 USD
-  - Watch Ads: ONLY give +1 Yellow Coin if real ad SDK triggers reward callback
-    - If no ad available, nothing happens (no coin)
-    - There is a hook function showRewardedAd() to implement with your ad SDK
-  - Withdraw flow: PIN-protected, min $5, validated amount, local history saved
-  - Contact opens mailto for public contact
-  - All data persisted in localStorage
-*/
-
-const STORAGE_KEY = 'tgc_game_v1_final';
-const HISTORY_KEY = 'tgc_withdraw_history_v1_final';
-const PIN_KEY = 'tgc_pin_hash_v1_final';
+/* Game logic (unchanged rules & behavior) */
+const STORAGE_KEY = 'tgc_game_final_v2';
+const HISTORY_KEY = 'tgc_withdraw_history_final_v2';
+const PIN_KEY = 'tgc_pin_hash_final_v2';
 const CONTACT_EMAIL = 'ccontactstgc@gmail.com';
 
 // Rules/constants
@@ -260,18 +264,10 @@ function tapAction(){
   saveData();
 }
 
-// WATCH ADS: this function triggers the ad flow.
-// IMPORTANT: This file does NOT include any real ad SDK.
-// Implement showRewardedAd() with your ad provider; it must return a Promise that resolves
-// with { rewarded: true } when user watched full ad, or rejects / resolves with { rewarded: false } otherwise.
+// WATCH ADS: integrate real ad provider into showRewardedAd().
+// For now showRewardedAd() returns { rewarded:false } by default (no reward).
 async function showRewardedAd(){
-  // DEFAULT BEHAVIOR: No ad integrated -> no reward.
-  // Replace this whole function with ad SDK integration.
-  // Example (pseudo):
-  //   return adSdk.showRewardedAd().then(result => { return { rewarded: result.rewarded }; });
-  //
-  // For now, we simply inform user no ads are available and return rewarded:false.
-  alert('No ads available at the moment. Please try again later.');
+  alert('No ads available. Admin must integrate a real ad SDK.');
   return { rewarded: false };
 }
 
@@ -281,18 +277,14 @@ async function onWatchAdsClick(){
     if(result && result.rewarded){
       // reward: +1 Yellow Coin
       data.yellowCoins += 1;
-      // do NOT auto-convert yellow->tgc here; conversion only on tapping (as requested)
+      // do NOT auto-convert yellow->tgc here; conversion only on tap.
       saveData();
       alert('You earned +1 Yellow Coin for watching the ad.');
     } else {
-      // no reward (either ad not available or user did not finish)
-      // do nothing (no coin)
-      // Optionally show message already done by showRewardedAd()
+      // no reward
     }
   } catch(err){
-    // ad failed or canceled
     console.error('Ad error', err);
-    // Do not award coin
     alert('Ad not available or error occurred. No reward.');
   }
 }
@@ -341,7 +333,6 @@ async function withdrawFlow(){
   if(tgcToRemove > 0){
     const remove = Math.min(tgcToRemove, data.tgc);
     data.tgc = Math.max(0, data.tgc - remove);
-    // Note: if amount does not exactly match TGC unit multiples, remaining USD stays in data.usd
   }
 
   saveData();
@@ -349,7 +340,6 @@ async function withdrawFlow(){
   // record local withdrawal history
   pushHistory({ time: new Date().toISOString(), amount: amount, ltc: ltc, remaining: data.usd });
 
-  // Placeholder: here you will connect to backend (Firebase Cloud Function) to forward the withdraw request to admin/email.
   alert(`Withdrawal recorded locally: $${amount.toFixed(2)} to ${ltc}\nRemaining balance: $${data.usd.toFixed(2)}\nAdmin will process it server-side.`);
 
   renderUI();
@@ -367,4 +357,4 @@ document.getElementById('contactBtn').addEventListener('click', () => {
 renderUI();
 </script>
 </body>
-  </html>
+                                                           </html>
