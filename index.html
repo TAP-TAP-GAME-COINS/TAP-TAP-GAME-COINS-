@@ -1,1 +1,370 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TGC — Full Game (No Fake Ads)</title>
+  <style>
+    :root{
+      --gold:#FFD700;
+      --gold-dark:#f0c200;
+      --bg:#ffffff;
+      --muted:#555;
+    }
+    body {
+      margin:0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: #111;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      padding:20px;
+    }
+    header { text-align:center; margin-bottom:8px; }
+    h1 {
+      font-size:44px;
+      margin:0;
+      color:#000;
+      text-shadow: 1px 1px var(--gold);
+      letter-spacing:2px;
+    }
+    #gameCard{
+      width:100%;
+      max-width:760px;
+      background: #fff;
+      border-radius:12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      padding:20px;
+      box-sizing:border-box;
+    }
+    #tapCircle{
+      width:170px;
+      height:170px;
+      border-radius:50%;
+      background:var(--gold);
+      border:6px solid var(--gold-dark);
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-weight:800;
+      font-size:28px;
+      color:#000;
+      margin:18px auto;
+      cursor:pointer;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+      user-select:none;
+    }
+    .stats {
+      display:flex;
+      justify-content:space-around;
+      gap:12px;
+      margin-top:8px;
+      flex-wrap:wrap;
+    }
+    .stat {
+      min-width:150px;
+      background:#fff;
+      border-radius:8px;
+      padding:10px 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+      text-align:center;
+    }
+    .stat .label { color:var(--muted); font-size:13px; }
+    .stat .value { font-weight:700; font-size:18px; margin-top:6px; display:block; }
+
+    .controls { text-align:center; margin-top:16px; display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+    button { padding:10px 16px; border-radius:8px; border:0; font-size:15px; cursor:pointer; }
+    .btn-orange { background:#ff7a00; color:#fff; }
+    .btn-green  { background:#2ea44f; color:#fff; }
+    .btn-blue   { background:#0366d6; color:#fff; }
+    .note { text-align:center; color:var(--muted); margin-top:10px; font-size:13px; }
+
+    #history {
+      margin-top:18px;
+      max-width:700px;
+      margin-left:auto; margin-right:auto;
+      font-size:13px;
+    }
+    .hist-item { padding:10px; border-bottom:1px solid #f0f0f0; }
+
+    @media (max-width:480px){
+      #tapCircle { width:140px; height:140px; font-size:22px; }
+      .stat { min-width:120px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>TGC</h1>
+    <div style="color:var(--muted); margin-top:6px">Tap to earn — original rules. Watch Ads requires a real ad and will reward only on real ad callback.</div>
+  </header>
+
+  <main id="gameCard" role="main">
+    <div id="tapCircle" aria-label="Tap button">TAP</div>
+
+    <div class="stats" aria-hidden="false">
+      <div class="stat"><div class="label">Taps</div><div id="taps" class="value">0</div></div>
+      <div class="stat"><div class="label">Yellow Coins</div><div id="yellow" class="value">0</div></div>
+      <div class="stat"><div class="label">TGC</div><div id="tgc" class="value">0</div></div>
+      <div class="stat"><div class="label">Balance (USD)</div><div id="usd" class="value">0.00</div></div>
+    </div>
+
+    <div class="controls" role="toolbar" aria-label="controls">
+      <button id="watchAds" class="btn-orange">Watch Ads</button>
+      <button id="withdrawBtn" class="btn-green">Withdraw</button>
+      <button id="contactBtn" class="btn-blue">Contact Us</button>
+    </div>
+
+    <div class="note">
+      Rules: <strong>200 taps = 1 Yellow coin</strong> • <strong>200 Yellow = 1 TGC</strong> • <strong>1 TGC = $0.10</strong><br>
+      Watch Ads will give <strong>+1 Yellow coin</strong> only when a real ad network confirms reward (no fake ads).
+    </div>
+
+    <div id="history"></div>
+  </main>
+
+<script>
+/*
+  Final game (no fake ads)
+  - Original rules:
+      200 TAPs => 1 Yellow Coin
+      200 Yellow => 1 TGC
+      1 TGC = $0.10 USD
+  - Watch Ads: ONLY give +1 Yellow Coin if real ad SDK triggers reward callback
+    - If no ad available, nothing happens (no coin)
+    - There is a hook function showRewardedAd() to implement with your ad SDK
+  - Withdraw flow: PIN-protected, min $5, validated amount, local history saved
+  - Contact opens mailto for public contact
+  - All data persisted in localStorage
+*/
+
+const STORAGE_KEY = 'tgc_game_v1_final';
+const HISTORY_KEY = 'tgc_withdraw_history_v1_final';
+const PIN_KEY = 'tgc_pin_hash_v1_final';
+const CONTACT_EMAIL = 'ccontactstgc@gmail.com';
+
+// Rules/constants
+const TAPS_FOR_YELLOW = 200;
+const YELLOW_FOR_TGC = 200;
+const USD_PER_TGC = 0.10;   // 1 TGC = $0.10
+const MIN_WITHDRAW = 5;
+
+// Data model
+let data = loadData(); // { taps, yellowCoins, tgc, usd }
+
+function loadData(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return { taps:0, yellowCoins:0, tgc:0, usd:0 };
+  try { return JSON.parse(raw); } catch(e){ return { taps:0, yellowCoins:0, tgc:0, usd:0 }; }
+}
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  renderUI();
+}
+
+// UI rendering
+function renderUI(){
+  document.getElementById('taps').textContent = data.taps;
+  document.getElementById('yellow').textContent = data.yellowCoins;
+  document.getElementById('tgc').textContent = data.tgc;
+  document.getElementById('usd').textContent = data.usd.toFixed(2);
+  renderHistory();
+}
+
+// History helpers
+function getHistory(){
+  const raw = localStorage.getItem(HISTORY_KEY);
+  if(!raw) return [];
+  try { return JSON.parse(raw); } catch(e){ return []; }
+}
+function pushHistory(item){
+  const h = getHistory();
+  h.unshift(item);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0,50)));
+}
+function renderHistory(){
+  const list = getHistory();
+  const div = document.getElementById('history');
+  if(list.length === 0){ div.innerHTML = ''; return; }
+  let html = '<strong>Withdraw History (local)</strong>';
+  html += '<div style="margin-top:8px">';
+  list.forEach(r=>{
+    html += `<div class="hist-item">
+      <div style="font-weight:600">${new Date(r.time).toLocaleString()}</div>
+      <div>Amount: $${r.amount.toFixed(2)} &nbsp; | &nbsp; Remaining: $${r.remaining.toFixed(2)}</div>
+      <div style="font-size:13px;color:#444">LTC: ${escapeHtml(r.ltc)}</div>
+    </div>`;
+  });
+  html += '</div>';
+  div.innerHTML = html;
+}
+
+// simple escape
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+// PIN helpers using Web Crypto SHA-256
+async function sha256Hex(text){
+  const enc = new TextEncoder();
+  const data = enc.encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  const bytes = new Uint8Array(hash);
+  return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function hasPin(){
+  return !!localStorage.getItem(PIN_KEY);
+}
+async function setPinFlow(){
+  const p1 = prompt('Set withdrawal PIN (4-8 digits):');
+  if(!p1) return false;
+  if(!/^\d{4,8}$/.test(p1)){ alert('PIN must be 4-8 digits'); return false; }
+  const p2 = prompt('Confirm PIN:');
+  if(p1 !== p2){ alert('PINs do not match'); return false; }
+  const hash = await sha256Hex(p1);
+  localStorage.setItem(PIN_KEY, hash);
+  alert('PIN saved. You will need it to confirm withdrawals.');
+  return true;
+}
+async function verifyPinFlow(){
+  const stored = localStorage.getItem(PIN_KEY);
+  if(!stored) return false;
+  const pin = prompt('Enter your withdrawal PIN:');
+  if(!pin) return false;
+  const hash = await sha256Hex(pin);
+  return hash === stored;
+}
+
+// TAP logic (conversion happens on tap)
+function tapAction(){
+  data.taps += 1;
+
+  // taps -> yellow conversion
+  if(data.taps >= TAPS_FOR_YELLOW){
+    const addYellow = Math.floor(data.taps / TAPS_FOR_YELLOW);
+    data.yellowCoins += addYellow;
+    data.taps = data.taps % TAPS_FOR_YELLOW;
+  }
+
+  // yellow -> TGC conversion ONLY here (on tapping)
+  if(data.yellowCoins >= YELLOW_FOR_TGC){
+    const addTgc = Math.floor(data.yellowCoins / YELLOW_FOR_TGC);
+    data.yellowCoins = data.yellowCoins % YELLOW_FOR_TGC;
+    data.tgc += addTgc;
+    data.usd = parseFloat((data.usd + addTgc * USD_PER_TGC).toFixed(8));
+  }
+
+  saveData();
+}
+
+// WATCH ADS: this function triggers the ad flow.
+// IMPORTANT: This file does NOT include any real ad SDK.
+// Implement showRewardedAd() with your ad provider; it must return a Promise that resolves
+// with { rewarded: true } when user watched full ad, or rejects / resolves with { rewarded: false } otherwise.
+async function showRewardedAd(){
+  // DEFAULT BEHAVIOR: No ad integrated -> no reward.
+  // Replace this whole function with ad SDK integration.
+  // Example (pseudo):
+  //   return adSdk.showRewardedAd().then(result => { return { rewarded: result.rewarded }; });
+  //
+  // For now, we simply inform user no ads are available and return rewarded:false.
+  alert('No ads available at the moment. Please try again later.');
+  return { rewarded: false };
+}
+
+async function onWatchAdsClick(){
+  try {
+    const result = await showRewardedAd();
+    if(result && result.rewarded){
+      // reward: +1 Yellow Coin
+      data.yellowCoins += 1;
+      // do NOT auto-convert yellow->tgc here; conversion only on tapping (as requested)
+      saveData();
+      alert('You earned +1 Yellow Coin for watching the ad.');
+    } else {
+      // no reward (either ad not available or user did not finish)
+      // do nothing (no coin)
+      // Optionally show message already done by showRewardedAd()
+    }
+  } catch(err){
+    // ad failed or canceled
+    console.error('Ad error', err);
+    // Do not award coin
+    alert('Ad not available or error occurred. No reward.');
+  }
+}
+
+// Withdraw flow (PIN protected), no mailto or email sent from frontend
+async function withdrawFlow(){
+  if(data.usd < MIN_WITHDRAW){
+    alert(`Minimum withdraw is $${MIN_WITHDRAW}`);
+    return;
+  }
+
+  // ensure PIN exists
+  if(!hasPin()){
+    const ok = confirm('You do not have a withdrawal PIN set. Set one now for security?');
+    if(!ok) return;
+    const created = await setPinFlow();
+    if(!created) return;
+  }
+
+  const ltc = prompt('Enter your LTC wallet address:');
+  if(!ltc || ltc.trim() === ''){ alert('Withdrawal canceled (no wallet address provided).'); return; }
+
+  const amountStr = prompt(`Enter amount to withdraw in USD (min $${MIN_WITHDRAW}, max $${data.usd.toFixed(2)}):`);
+  const amount = parseFloat(amountStr);
+  if(isNaN(amount) || amount <= 0){
+    alert('Invalid amount.');
+    return;
+  }
+  if(amount < MIN_WITHDRAW){
+    alert(`Minimum withdraw is $${MIN_WITHDRAW}`);
+    return;
+  }
+  if(amount > data.usd + 1e-9){
+    alert('Invalid account balance');
+    return;
+  }
+
+  // verify PIN
+  const okPin = await verifyPinFlow();
+  if(!okPin){ alert('Incorrect PIN. Withdrawal cancelled.'); return; }
+
+  // Deduct USD
+  data.usd = parseFloat((data.usd - amount).toFixed(8));
+  // Adjust TGC units proportionally (remove whole TGC units equal to amount/USD_PER_TGC)
+  const tgcToRemove = Math.floor(amount / USD_PER_TGC);
+  if(tgcToRemove > 0){
+    const remove = Math.min(tgcToRemove, data.tgc);
+    data.tgc = Math.max(0, data.tgc - remove);
+    // Note: if amount does not exactly match TGC unit multiples, remaining USD stays in data.usd
+  }
+
+  saveData();
+
+  // record local withdrawal history
+  pushHistory({ time: new Date().toISOString(), amount: amount, ltc: ltc, remaining: data.usd });
+
+  // Placeholder: here you will connect to backend (Firebase Cloud Function) to forward the withdraw request to admin/email.
+  alert(`Withdrawal recorded locally: $${amount.toFixed(2)} to ${ltc}\nRemaining balance: $${data.usd.toFixed(2)}\nAdmin will process it server-side.`);
+
+  renderUI();
+}
+
+// Event bindings
+document.getElementById('tapCircle').addEventListener('click', () => { tapAction(); });
+document.getElementById('watchAds').addEventListener('click', () => { onWatchAdsClick(); });
+document.getElementById('withdrawBtn').addEventListener('click', () => { withdrawFlow().catch(err=>{ console.error(err); alert('Error: '+err.message); }); });
+document.getElementById('contactBtn').addEventListener('click', () => {
+  window.location.href = `mailto:${CONTACT_EMAIL}`;
+});
+
+// initial render
+renderUI();
+</script>
+</body>
+  </html>
